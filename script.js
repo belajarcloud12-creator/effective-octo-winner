@@ -291,44 +291,42 @@ function updateKategoriUI(namaKategori, budget, terpakai) {
     }
 }
 
+// --- EKSPOR KE EXCEL (Format CSV yang Lebih Rapi & Anti-Acak-Acakan) ---
 function eksporKeExcel() {
     if (daftarPengeluaran.length === 0 && daftarPemasukan.length === 0) {
         alert("Belum ada data untuk diekspor!");
         return;
     }
 
-    let htmlExcel = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/1999/xhtml">
-        <head><meta charset="UTF-8"></head>
-        <body>
-        <table border="1">
-            <tr><th colspan="3" style="font-size:16px; font-weight:bold;">LAPORAN KEUANGAN</th></tr>
-            <tr><th colspan="3" style="background:#dff0d8;">PEMASUKAN</th></tr>
-            <tr><th>Sumber</th><th colspan="2">Jumlah (Rp)</th></tr>
-    `;
-
+    let csvContent = "\uFEFF";
+    csvContent +="LAPORAN KEUANGAN DOMPETKU\r\n\r\n";
+    
+    csvContent += "PEMASUKAN\r\n";
+    csvContent += "Sumber,Jumlah (Rp)\r\n";
+    
     daftarPemasukan.forEach(item => {
-        htmlExcel += `<tr><td>${item.sumber}</td><td colspan="2">${item.jumlah}</td></tr>`;
+        
+        let sumberBersih = item.sumber.replace(/[^\w\s/]/gi, '').trim();
+        csvContent += `"${sumberBersih}",${item.jumlah}\r\n`;
     });
 
-    htmlExcel += `
-            <tr><th colspan="3" style="background:#f2dede;">PENGELUARAN</th></tr>
-            <tr><th>Nama Pengeluaran</th><th>Kategori Dana</th><th>Jumlah (Rp)</th></tr>
-    `;
-
+    csvContent += "\r\n";
+    
+    csvContent += "PENGELUARAN\r\n";
+    csvContent += "Nama Pengeluaran,Kategori Dana,Jumlah (Rp)\r\n";
+    
     daftarPengeluaran.forEach(item => {
-        htmlExcel += `<tr><td>${item.nama}</td><td>${item.kategori}</td><td>${item.jumlah}</td></tr>`;
+        let namaBersih = item.nama.replace(/[^\w\s/]/gi, '').trim();
+        csvContent += `"${namaBersih}","${item.kategori}",${item.jumlah}\r\n`;
     });
 
-    htmlExcel += '</table></body></html>';
-
-    const uri = 'data:application/vnd.ms-excel;charset=utf-8,' + encodeURIComponent(htmlExcel);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = uri;
-    a.download = 'Laporan_Keuangan.xls';
+    a.href = url;
+    a.download = 'Laporan_Keuangan.csv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 }
-
 updateTampilan();
