@@ -137,7 +137,6 @@ function tambahPengeluaran() {
     daftarPengeluaran.push(dataBaru);
     localStorage.setItem('daftarPengeluaran', JSON.stringify(daftarPengeluaran));
 
-    // Reset Form
     document.getElementById('pilihanPengeluaran').value = 'Jajan';
     document.getElementById('namaPengeluaran').value = '';
     document.getElementById('groupInputLainnya').style.display = 'none';
@@ -291,7 +290,6 @@ function updateKategoriUI(namaKategori, budget, terpakai) {
     }
 }
 
-// --- EKSPOR KE EXCEL (Format CSV yang Lebih Rapi & Anti-Acak-Acakan) ---
 function eksporKeExcel() {
     if (daftarPengeluaran.length === 0 && daftarPemasukan.length === 0) {
         alert("Belum ada data untuk diekspor!");
@@ -300,7 +298,6 @@ function eksporKeExcel() {
 
     let csvContent = "\uFEFF";
     csvContent +="LAPORAN KEUANGAN DOMPETKU\r\n\r\n";
-    
     csvContent += "PEMASUKAN\r\n";
     csvContent += "Sumber,Jumlah (Rp)\r\n";
     
@@ -311,7 +308,6 @@ function eksporKeExcel() {
     });
 
     csvContent += "\r\n";
-    
     csvContent += "PENGELUARAN\r\n";
     csvContent += "Nama Pengeluaran,Kategori Dana,Jumlah (Rp)\r\n";
     
