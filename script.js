@@ -231,6 +231,7 @@ function tambahPengeluaran() {
     });
     simpanPengeluaran();
 
+    // Kosongkan form
     $('pilihanPengeluaran').value = 'Jajan';
     $('namaPengeluaran').value = '';
     $('groupInputLainnya').style.display = 'none';
@@ -481,120 +482,305 @@ function isiInfoTanggal() {
     $('tahunFooter').innerText = sekarang.getFullYear();
 }
 
+const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const FORMAT_RUPIAH_XLSX = '"Rp "#,##0;[Red]-"Rp "#,##0';
+const LEBAR_KOLOM_XLSX = [6, 20, 9, 30, 34, 18];
 
-const GAYA_EXCEL = `
-    body, table { font-family: Calibri, Arial, sans-serif; font-size: 11pt; }
-    table { border-collapse: collapse; }
-    td, th { border: 1px solid #b8c4d6; padding: 5px 8px; vertical-align: middle; }
-    .judul { font-size: 18pt; font-weight: bold; color: #14305a; border: none; }
-    .sub { color: #64748b; border: none; }
-    .sect { font-size: 12pt; font-weight: bold; color: #ffffff; background: #14305a; border: 1px solid #14305a; }
-    th { background: #dbe7f6; color: #14305a; font-weight: bold; text-align: center; }
-    .c { text-align: center; }
-    .n { text-align: right; mso-number-format: "\\0022Rp\\0022\\ #\\,##0"; }
-    .total td { background: #fff3d6; font-weight: bold; }
-    .minus { color: #b91c1c; font-weight: bold; }
-    .kosong { color: #94a3b8; font-style: italic; }
-    .nb { border: none; }
-`;
+const GAYA = {
+    judul: 1, sub: 2, seksi: 3, kepala: 4, teks: 5, tengah: 6,
+    uang: 7, totalLabel: 8, totalUang: 9, kosong: 10, labelTebal: 11, totalLabelKiri: 12
+};
+
+const STYLES_XLSX = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="1"><numFmt numFmtId="164" formatCode="${FORMAT_RUPIAH_XLSX.replace(/"/g, '&quot;')}"/></numFmts>
+<fonts count="7">
+<font><sz val="11"/><color rgb="FF1B2A41"/><name val="Calibri"/><family val="2"/></font>
+<font><b/><sz val="18"/><color rgb="FF14305A"/><name val="Calibri"/><family val="2"/></font>
+<font><sz val="11"/><color rgb="FF64748B"/><name val="Calibri"/><family val="2"/></font>
+<font><b/><sz val="12"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font>
+<font><b/><sz val="11"/><color rgb="FF14305A"/><name val="Calibri"/><family val="2"/></font>
+<font><b/><sz val="11"/><color rgb="FF1B2A41"/><name val="Calibri"/><family val="2"/></font>
+<font><i/><sz val="11"/><color rgb="FF94A3B8"/><name val="Calibri"/><family val="2"/></font>
+</fonts>
+<fills count="5">
+<fill><patternFill patternType="none"/></fill>
+<fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF14305A"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFDBE7F6"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFF3D6"/><bgColor indexed="64"/></patternFill></fill>
+</fills>
+<borders count="2">
+<border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FFB8C4D6"/></left><right style="thin"><color rgb="FFB8C4D6"/></right><top style="thin"><color rgb="FFB8C4D6"/></top><bottom style="thin"><color rgb="FFB8C4D6"/></bottom><diagonal/></border>
+</borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="13">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="0" fontId="4" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="164" fontId="5" fillId="4" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="0" fontId="6" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
 
 function bersihkanTeks(teks) {
-    return esc(String(teks ?? '').replace(/[^\w\s/.,()%&-]/g, '').trim());
+    return String(teks ?? '')
+        .replace(/[^\p{L}\p{N}\s/.,()%&+:-]/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
-function barisKosong(pesan) {
-    return `<tr><td colspan="6" class="c kosong">${pesan}</td></tr>`;
+function xmlEsc(teks) {
+    return String(teks)
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 
-function barisExcelPengeluaran() {
-    if (daftarPengeluaran.length === 0) return barisKosong('Belum ada pengeluaran');
-
-    const urut = [...daftarPengeluaran].sort((a, b) => tanggalItem(a) - tanggalItem(b));
-
-    return urut.map((item, i) => {
-        const waktu = tanggalItem(item).toISOString();
-        const labelPos = esc(POS_BUDGET[item.kategori]?.label) || bersihkanTeks(item.kategori);
-
-        return `<tr>
-            <td class="c">${i + 1}</td>
-            <td>${formatTanggal(waktu)}</td>
-            <td class="c">${formatJam(waktu)}</td>
-            <td>${bersihkanTeks(item.nama)}</td>
-            <td>${labelPos}</td>
-            <td class="n">${item.jumlah}</td>
-        </tr>`;
-    }).join('');
+function hurufKolom(indeks) {
+    return String.fromCharCode(65 + indeks);
 }
 
-function barisExcelRekap(ringkasan) {
-    return Object.entries(POS_BUDGET).map(([kunci, konfig]) => {
-        const { budget, terpakai, sisa } = ringkasan.pos[kunci];
-        return `<tr>
-            <td colspan="2">${esc(konfig.label)}</td>
-            <td colspan="2" class="n">${Math.round(budget)}</td>
-            <td class="n">${terpakai}</td>
-            <td class="n ${sisa < 0 ? 'minus' : ''}">${Math.round(sisa)}</td>
-        </tr>`;
-    }).join('');
+function xmlSel(ref, nilai, gaya) {
+    if (nilai === null || nilai === undefined || nilai === '') {
+        return `<c r="${ref}" s="${gaya}"/>`;
+    }
+    if (typeof nilai === 'number') {
+        return `<c r="${ref}" s="${gaya}"><v>${Number.isFinite(nilai) ? nilai : 0}</v></c>`;
+    }
+    return `<c r="${ref}" s="${gaya}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(nilai)}</t></is></c>`;
 }
 
-function barisExcelPemasukan() {
-    if (daftarPemasukan.length === 0) return barisKosong('Belum ada pemasukan');
-
-    return daftarPemasukan.map((item, i) => `<tr>
-            <td class="c">${i + 1}</td>
-            <td>${formatTanggal(tanggalItem(item).toISOString())}</td>
-            <td colspan="2">${bersihkanTeks(item.sumber) || 'Pemasukan / Gaji'}</td>
-            <td colspan="2" class="n">${item.jumlah}</td>
-        </tr>`).join('');
-}
-
-function buatHtmlLaporan(ringkasan) {
+function susunBarisLaporan(ringkasan) {
     const { totalMasuk, totalKeluar, sisaTotal } = ringkasan;
+    const baris = [];
+    const gabung = [];
+
+    const tambah = (sel, tinggi) => {
+        const nomor = baris.length + 1;
+        const hasil = [];
+        let kol = 0;
+
+        sel.forEach(([nilai, gaya, lebar = 1]) => {
+            hasil.push({ kol, nilai, gaya });
+            for (let i = 1; i < lebar; i++) hasil.push({ kol: kol + i, nilai: null, gaya });
+            if (lebar > 1) gabung.push(`${hurufKolom(kol)}${nomor}:${hurufKolom(kol + lebar - 1)}${nomor}`);
+            kol += lebar;
+        });
+        baris.push({ sel: hasil, tinggi });
+    };
+    const kepala = (...judul) => tambah(judul.map(j => [j, GAYA.kepala]));
+    const kosong = () => tambah([]);
+
     const sekarang = new Date().toISOString();
-    const spacer = '<tr><td colspan="6" class="nb"></td></tr>';
-    const teksBiasa = `style="mso-number-format:'@'"`;
+    tambah([['LAPORAN KEUANGAN DOMPETKU', GAYA.judul, 6]], 30);
+    tambah([['Dicetak: ' + formatTanggal(sekarang) + ', ' + formatJam(sekarang), GAYA.sub, 6]]);
+    kosong();
 
-    return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta charset="UTF-8">
-<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
-<x:Name>Laporan Keuangan</x:Name>
-<x:WorksheetOptions><x:DisplayGridlines>false</x:DisplayGridlines></x:WorksheetOptions>
-</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
-<style>${GAYA_EXCEL}</style>
-</head>
-<body>
-<table>
-    <col width="45"><col width="150"><col width="80"><col width="230"><col width="190"><col width="130">
-    <tr><td colspan="6" class="judul">LAPORAN KEUANGAN DOMPETKU</td></tr>
-    <tr><td colspan="6" class="sub">Dicetak: ${formatTanggal(sekarang)}, ${formatJam(sekarang)}</td></tr>
-    ${spacer}
+    tambah([['RINGKASAN', GAYA.seksi, 6]], 20);
+    tambah([['Total pemasukan', GAYA.labelTebal, 4], [totalMasuk, GAYA.uang, 2]]);
+    tambah([['Total pengeluaran', GAYA.labelTebal, 4], [totalKeluar, GAYA.uang, 2]]);
+    tambah([['Sisa saldo', GAYA.totalLabelKiri, 4], [sisaTotal, GAYA.totalUang, 2]]);
+    kosong();
 
-    <tr><td colspan="6" class="sect">RINGKASAN</td></tr>
-    <tr><td colspan="4"><b>Total pemasukan</b></td><td colspan="2" class="n">${totalMasuk}</td></tr>
-    <tr><td colspan="4"><b>Total pengeluaran</b></td><td colspan="2" class="n">${totalKeluar}</td></tr>
-    <tr class="total"><td colspan="4">Sisa saldo</td><td colspan="2" class="n">${sisaTotal}</td></tr>
-    ${spacer}
+    tambah([['DAFTAR PENGELUARAN', GAYA.seksi, 6]], 20);
+    kepala('No', 'Tanggal', 'Jam', 'Nama Pengeluaran', 'Diambil dari Pos', 'Jumlah');
+    if (daftarPengeluaran.length === 0) {
+        tambah([['Belum ada pengeluaran', GAYA.kosong, 6]]);
+    } else {
+        [...daftarPengeluaran]
+            .sort((a, b) => tanggalItem(a) - tanggalItem(b))
+            .forEach((item, i) => {
+                const waktu = tanggalItem(item).toISOString();
+                tambah([
+                    [i + 1, GAYA.tengah],
+                    [formatTanggal(waktu), GAYA.teks],
+                    [formatJam(waktu), GAYA.tengah],
+                    [bersihkanTeks(item.nama) || 'Pengeluaran', GAYA.teks],
+                    [POS_BUDGET[item.kategori]?.label || bersihkanTeks(item.kategori), GAYA.teks],
+                    [item.jumlah, GAYA.uang]
+                ]);
+            });
+    }
+    tambah([['TOTAL PENGELUARAN', GAYA.totalLabel, 5], [totalKeluar, GAYA.totalUang]]);
+    kosong();
 
-    <tr><td colspan="6" class="sect">DAFTAR PENGELUARAN</td></tr>
-    <tr><th>No</th><th>Tanggal</th><th>Jam</th><th>Nama Pengeluaran</th><th>Diambil dari Pos</th><th>Jumlah</th></tr>
-    ${barisExcelPengeluaran()}
-    <tr class="total"><td colspan="5" class="n" ${teksBiasa}>TOTAL PENGELUARAN</td><td class="n">${totalKeluar}</td></tr>
-    ${spacer}
+    tambah([['REKAP PER POS BUDGET', GAYA.seksi, 6]], 20);
+    tambah([['Pos', GAYA.kepala, 3], ['Alokasi', GAYA.kepala], ['Terpakai', GAYA.kepala], ['Sisa', GAYA.kepala]]);
+    Object.entries(POS_BUDGET).forEach(([kunci, konfig]) => {
+        const { budget, terpakai, sisa } = ringkasan.pos[kunci];
+        tambah([
+            [konfig.label, GAYA.teks, 3],
+            [Math.round(budget), GAYA.uang],
+            [terpakai, GAYA.uang],
+            [Math.round(sisa), GAYA.uang]
+        ]);
+    });
+    kosong();
 
-    <tr><td colspan="6" class="sect">REKAP PER POS BUDGET</td></tr>
-    <tr><th colspan="2">Pos</th><th colspan="2">Alokasi</th><th>Terpakai</th><th>Sisa</th></tr>
-    ${barisExcelRekap(ringkasan)}
-    ${spacer}
+    tambah([['DAFTAR PEMASUKAN', GAYA.seksi, 6]], 20);
+    tambah([['No', GAYA.kepala], ['Tanggal', GAYA.kepala], ['Sumber', GAYA.kepala, 2], ['Nominal', GAYA.kepala, 2]]);
+    if (daftarPemasukan.length === 0) {
+        tambah([['Belum ada pemasukan', GAYA.kosong, 6]]);
+    } else {
+        daftarPemasukan.forEach((item, i) => {
+            tambah([
+                [i + 1, GAYA.tengah],
+                [formatTanggal(tanggalItem(item).toISOString()), GAYA.teks],
+                [bersihkanTeks(item.sumber) || 'Pemasukan / Gaji', GAYA.teks, 2],
+                [item.jumlah, GAYA.uang, 2]
+            ]);
+        });
+    }
+    tambah([['TOTAL PEMASUKAN', GAYA.totalLabel, 4], [totalMasuk, GAYA.totalUang, 2]]);
 
-    <tr><td colspan="6" class="sect">DAFTAR PEMASUKAN</td></tr>
-    <tr><th>No</th><th>Tanggal</th><th colspan="2">Sumber</th><th colspan="2">Nominal</th></tr>
-    ${barisExcelPemasukan()}
-    <tr class="total"><td colspan="4" class="n" ${teksBiasa}>TOTAL PEMASUKAN</td><td colspan="2" class="n">${totalMasuk}</td></tr>
-</table>
-</body>
-</html>`;
+    return { baris, gabung };
+}
+
+function buatXmlLembar({ baris, gabung }) {
+    const kolom = LEBAR_KOLOM_XLSX
+        .map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`)
+        .join('');
+
+    const isi = baris.map((b, i) => {
+        const nomor = i + 1;
+        const tinggi = b.tinggi ? ` ht="${b.tinggi}" customHeight="1"` : '';
+        const sel = b.sel.map(s => xmlSel(hurufKolom(s.kol) + nomor, s.nilai, s.gaya)).join('');
+        return `<row r="${nomor}"${tinggi}>${sel}</row>`;
+    }).join('');
+
+    const blokGabung = gabung.length
+        ? `<mergeCells count="${gabung.length}">${gabung.map(g => `<mergeCell ref="${g}"/>`).join('')}</mergeCells>`
+        : '';
+
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
+<sheetViews><sheetView showGridLines="0" workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<cols>${kolom}</cols>
+<sheetData>${isi}</sheetData>
+${blokGabung}
+<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>
+<pageSetup paperSize="9" orientation="portrait" fitToWidth="1" fitToHeight="0"/>
+</worksheet>`;
+}
+
+const TABEL_CRC32 = (() => {
+    const tabel = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        tabel[n] = c >>> 0;
+    }
+    return tabel;
+})();
+
+function hitungCrc32(bytes) {
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) c = TABEL_CRC32[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function buatZip(daftarBerkas) {
+    const enc = new TextEncoder();
+    const now = new Date();
+    const jamDos = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+    const tglDos = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+
+    const isiZip = [];
+    const direktori = [];
+    let posisi = 0;
+
+    daftarBerkas.forEach(({ nama, isi }) => {
+        const namaByte = enc.encode(nama);
+        const data = enc.encode(isi);
+        const crc = hitungCrc32(data);
+
+        const lokal = new DataView(new ArrayBuffer(30));
+        lokal.setUint32(0, 0x04034b50, true);
+        lokal.setUint16(4, 20, true);
+        lokal.setUint16(6, 0x0800, true);
+        lokal.setUint16(10, jamDos, true);
+        lokal.setUint16(12, tglDos, true);
+        lokal.setUint32(14, crc, true);
+        lokal.setUint32(18, data.length, true);
+        lokal.setUint32(22, data.length, true);
+        lokal.setUint16(26, namaByte.length, true);
+
+        const pusat = new DataView(new ArrayBuffer(46));
+        pusat.setUint32(0, 0x02014b50, true);
+        pusat.setUint16(4, 20, true);
+        pusat.setUint16(6, 20, true);
+        pusat.setUint16(8, 0x0800, true);
+        pusat.setUint16(12, jamDos, true);
+        pusat.setUint16(14, tglDos, true);
+        pusat.setUint32(16, crc, true);
+        pusat.setUint32(20, data.length, true);
+        pusat.setUint32(24, data.length, true);
+        pusat.setUint16(28, namaByte.length, true);
+        pusat.setUint32(42, posisi, true);
+
+        isiZip.push(new Uint8Array(lokal.buffer), namaByte, data);
+        direktori.push(new Uint8Array(pusat.buffer), namaByte);
+        posisi += 30 + namaByte.length + data.length;
+    });
+
+    const ukuranDirektori = direktori.reduce((total, b) => total + b.length, 0);
+    const akhir = new DataView(new ArrayBuffer(22));
+    akhir.setUint32(0, 0x06054b50, true);
+    akhir.setUint16(8, daftarBerkas.length, true);
+    akhir.setUint16(10, daftarBerkas.length, true);
+    akhir.setUint32(12, ukuranDirektori, true);
+    akhir.setUint32(16, posisi, true);
+
+    return new Blob([...isiZip, ...direktori, new Uint8Array(akhir.buffer)], { type: MIME_XLSX });
+}
+
+function buatFileXlsx(ringkasan) {
+    const xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+    const nsMain = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+    const nsRel = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    const nsPaket = 'http://schemas.openxmlformats.org/package/2006/relationships';
+
+    return buatZip([
+        { nama: '[Content_Types].xml', isi: xml +
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+            '<Default Extension="xml" ContentType="application/xml"/>' +
+            '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+            '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+            '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+            '</Types>' },
+        { nama: '_rels/.rels', isi: xml +
+            `<Relationships xmlns="${nsPaket}">` +
+            `<Relationship Id="rId1" Type="${nsRel}/officeDocument" Target="xl/workbook.xml"/>` +
+            '</Relationships>' },
+        { nama: 'xl/workbook.xml', isi: xml +
+            `<workbook xmlns="${nsMain}" xmlns:r="${nsRel}">` +
+            '<bookViews><workbookView/></bookViews>' +
+            '<sheets><sheet name="Laporan Keuangan" sheetId="1" r:id="rId1"/></sheets>' +
+            '</workbook>' },
+        { nama: 'xl/_rels/workbook.xml.rels', isi: xml +
+            `<Relationships xmlns="${nsPaket}">` +
+            `<Relationship Id="rId1" Type="${nsRel}/worksheet" Target="worksheets/sheet1.xml"/>` +
+            `<Relationship Id="rId2" Type="${nsRel}/styles" Target="styles.xml"/>` +
+            '</Relationships>' },
+        { nama: 'xl/styles.xml', isi: STYLES_XLSX },
+        { nama: 'xl/worksheets/sheet1.xml', isi: buatXmlLembar(susunBarisLaporan(ringkasan)) }
+    ]);
 }
 
 function unduhFile(isi, namaFile, tipe) {
@@ -617,8 +803,13 @@ function eksporKeExcel() {
         return;
     }
 
-    const html = buatHtmlLaporan(hitungRingkasan());
-    unduhFile('\uFEFF' + html, 'Laporan_Keuangan_DompetKu.xls', 'application/vnd.ms-excel;charset=utf-8;');
+    try {
+        const berkas = buatFileXlsx(hitungRingkasan());
+        unduhFile(berkas, 'Laporan_Keuangan_DompetKu.xlsx', MIME_XLSX);
+    } catch (err) {
+        console.error('Gagal membuat file Excel:', err);
+        alert('Maaf, file Excel gagal dibuat. Coba muat ulang halaman lalu ekspor lagi.');
+    }
 }
 
 
@@ -723,7 +914,6 @@ function gambarGrafik() {
     dataGrafikAktif = g;
     $('judulGrafik').innerText = g.judul;
 
-    // Ukuran kanvas dan margin
     const W = 640, H = 340;
     const kiri = 64, kanan = 18, atas = 16;
     const labelMiring = modeGrafik === 'tahun';
@@ -731,7 +921,6 @@ function gambarGrafik() {
     const lebar = W - kiri - kanan;
     const tinggi = H - atas - bawah;
 
-    // Skala
     const maks = Math.max(0, ...g.nilai.filter(v => v !== null));
     const { langkah, jumlah } = hitungSkalaY(maks);
     const yMaks = langkah * jumlah;
