@@ -484,16 +484,10 @@ function isiInfoTanggal() {
     $('tahunFooter').innerText = sekarang.getFullYear();
 }
 
-
-// ===== Ekspor Excel =====
-// Membuat file .xlsx asli langsung di browser (tanpa library & tanpa internet).
-// .xlsx adalah file ZIP berisi beberapa file XML, jadi cukup ditulis manual.
-
 const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const FORMAT_RUPIAH_XLSX = '"Rp "#,##0;[Red]-"Rp "#,##0';
-const LEBAR_KOLOM_XLSX = [6, 20, 9, 30, 34, 18]; // kolom A sampai F
+const LEBAR_KOLOM_XLSX = [6, 20, 9, 30, 34, 18]; 
 
-// Nomor gaya = urutan <xf> di STYLES_XLSX di bawah
 const GAYA = {
     judul: 1, sub: 2, seksi: 3, kepala: 4, teks: 5, tengah: 6,
     uang: 7, totalLabel: 8, totalUang: 9, kosong: 10, labelTebal: 11, totalLabelKiri: 12
@@ -541,7 +535,6 @@ const STYLES_XLSX = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
 
-// Teks polos untuk laporan: buang emoji/simbol aneh, sisakan huruf, angka, dan tanda baca umum
 function bersihkanTeks(teks) {
     return String(teks ?? '')
         .replace(/[^\p{L}\p{N}\s/.,()%&+:-]/gu, '')
@@ -572,7 +565,6 @@ function xmlSel(ref, nilai, gaya) {
     return `<c r="${ref}" s="${gaya}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(nilai)}</t></is></c>`;
 }
 
-// Susun isi lembar kerja. Tiap sel ditulis [nilai, gaya, jumlahKolomYangDigabung]
 function susunBarisLaporan(ringkasan) {
     const { totalMasuk, totalKeluar, sisaTotal } = ringkasan;
     const baris = [];
@@ -688,7 +680,6 @@ ${blokGabung}
 </worksheet>`;
 }
 
-// ZIP sederhana tanpa kompresi (metode "store"), cukup untuk file sekecil ini
 const TABEL_CRC32 = (() => {
     const tabel = new Uint32Array(256);
     for (let n = 0; n < 256; n++) {
@@ -824,8 +815,6 @@ function eksporKeExcel() {
 }
 
 
-// ===== Grafik statistik (minggu / bulan / tahun) =====
-
 const NAMA_HARI_PENDEK = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const NAMA_BULAN_PENDEK = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
@@ -839,8 +828,6 @@ function setModeGrafik(mode) {
     gambarGrafik();
 }
 
-// Selisih hari kalender (a - b). Dihitung dari tanggalnya, bukan dari selisih milidetik,
-// supaya tidak meleset sehari saat ada pergantian jam musim panas (DST).
 function selisihHari(a, b) {
     const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
     const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
@@ -910,7 +897,6 @@ function siapkanDataGrafik(mode) {
         if (i >= 0 && i < nilai.length) nilai[i] += item.jumlah;
     });
 
-    // Waktu yang belum terjadi (setelah hari ini / bulan ini) tidak digambar
     const nilaiTampil = nilai.map((v, i) => (i <= konfig.indeksSekarang ? v : null));
 
     return { ...konfig, nilai: nilaiTampil };
@@ -936,7 +922,6 @@ function hitungSkalaY(maks) {
     return { langkah, jumlah: Math.ceil(maks / langkah) };
 }
 
-// Mengukur lebar teks sumbu dengan font yang sama seperti di layar
 function buatPengukurTeks(elemen) {
     let ctx = null;
     try {
@@ -948,15 +933,9 @@ function buatPengukurTeks(elemen) {
     return teks => (ctx ? ctx.measureText(String(teks)).width : String(teks).length * 6.6);
 }
 
-// Menentukan label sumbu X mana yang ditampilkan agar tidak saling bertumpuk.
-// - Hari & bulan: nama lengkap bila muat, kalau tidak pakai singkatan (Sen, Sel / Jan, Feb).
-// - Tanggal: kelipatan 1, 2, 5 atau 10 sesuai lebar layar.
-// - Label "hari ini" selalu tampil.
 function pilihLabelSumbuX(g, posX, mode, ukur) {
     const n = g.labels.length;
     const jarak = n > 1 ? posX[1] - posX[0] : Infinity;
-    // Pakai tingkat label terpanjang yang masih muat semua: nama lengkap, singkatan, lalu inisial.
-    // Kalau tidak ada yang muat, pakai singkatan dan sebagian label dilewati (lihat langkah di bawah).
     const tingkat = [g.labels, g.labelsPendek, g.labelsInisial].filter(Boolean);
     const muatSemua = daftar => Math.max(...daftar.map(ukur)) + 6 <= jarak;
     const teks = tingkat.find(muatSemua) ?? g.labelsPendek;
@@ -978,13 +957,11 @@ function pilihLabelSumbuX(g, posX, mode, ukur) {
 
     const bentrok = (i, j) => Math.abs(posX[i] - posX[j]) < (ukur(teks[i]) + ukur(teks[j])) / 2 + 6;
 
-    // Tanggal terakhir ikut tampil bila masih ada tempat
     const terakhir = n - 1;
     if (mode === 'bulan' && !tampil.has(terakhir) && ![...tampil].some(j => bentrok(terakhir, j))) {
         tampil.add(terakhir);
     }
 
-    // Hari ini selalu tampil; label tetangga yang menabraknya dikalahkan
     const sekarang = g.indeksSekarang;
     if (!tampil.has(sekarang)) {
         [...tampil].filter(j => bentrok(sekarang, j)).forEach(j => tampil.delete(j));
@@ -1002,7 +979,6 @@ function gambarGrafik() {
     dataGrafikAktif = g;
     $('judulGrafik').innerText = g.judul;
 
-    // Tab Statistik sedang tersembunyi: lebarnya 0, digambar ulang saat tab dibuka (lihat bukaTab)
     const W = Math.floor(wrap.clientWidth);
     if (W < 120) return;
     lebarGrafikTergambar = W;
@@ -1011,14 +987,12 @@ function gambarGrafik() {
     const sempit = W < 480;
     const H = Math.round(Math.min(340, Math.max(230, W * 0.62)));
 
-    // Skala
     const maks = Math.max(0, ...g.nilai.filter(v => v !== null));
     const { langkah, jumlah } = hitungSkalaY(maks);
     const yMaks = langkah * jumlah;
     const n = g.labels.length;
     const labelY = Array.from({ length: jumlah + 1 }, (_, t) => singkatRupiah(t * langkah));
 
-    // Margin menyesuaikan lebar label sumbu Y; judul sumbu Y hanya di layar lebar
     const kiri = Math.ceil(Math.max(...labelY.map(ukur))) + 12 + (sempit ? 0 : 18);
     const kanan = 14, atas = 14, bawah = 52;
     const lebar = W - kiri - kanan;
@@ -1031,14 +1005,12 @@ function gambarGrafik() {
 
     const svg = [`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(g.judul)}">`];
 
-    // Garis bantu + label sumbu Y
     for (let t = 0; t <= jumlah; t++) {
         const y = yAt(t * langkah);
         svg.push(`<line class="${t === 0 ? 'axis-line' : 'grid-line'}" x1="${kiri}" x2="${W - kanan}" y1="${y}" y2="${y}"/>`);
         svg.push(`<text class="ax-text" x="${kiri - 8}" y="${y + 4}" text-anchor="end">${labelY[t]}</text>`);
     }
 
-    // Label sumbu X
     const { teks, tampil } = pilihLabelSumbuX(g, posX, modeGrafik, ukur);
     tampil.forEach(i => {
         const kelas = 'ax-text' + (i === g.indeksSekarang ? ' hari-ini' : '');
@@ -1050,10 +1022,8 @@ function gambarGrafik() {
         svg.push(`<text class="ax-title" transform="translate(14 ${atas + tinggi / 2}) rotate(-90)" text-anchor="middle">Jumlah (Rupiah)</text>`);
     }
 
-    // Garis penunjuk titik yang dipilih (digeser lewat tampilkanTitikGrafik)
     svg.push(`<line class="guide" x1="0" x2="0" y1="${atas}" y2="${atas + tinggi}" visibility="hidden"/>`);
 
-    // Garis data
     const titik = g.nilai
         .map((v, i) => (v === null ? null : [posX[i], yAt(v)]))
         .filter(Boolean);
@@ -1061,7 +1031,6 @@ function gambarGrafik() {
         svg.push(`<polyline class="line" points="${titik.map(p => p.join(',')).join(' ')}"/>`);
     }
 
-    // Titik data (titik "hari ini" dibuat sedikit lebih besar)
     const radius = (modeGrafik === 'bulan' && sempit) ? 3 : (modeGrafik === 'bulan' ? 3.5 : 5);
     g.nilai.forEach((v, i) => {
         if (v === null) return;
@@ -1072,7 +1041,6 @@ function gambarGrafik() {
     svg.push('</svg>');
     wrap.innerHTML = svg.join('');
 
-    // Interaksi: seluruh kolom hari/tanggal/bulan bisa disentuh, bukan hanya titiknya.
     const svgEl = wrap.querySelector('svg');
     const indeksDariEvent = e => {
         const kotak = svgEl.getBoundingClientRect();
@@ -1131,8 +1099,6 @@ migrasiGajiLama();
 aktifkanFormatRupiahPadaInput();
 isiInfoTanggal();
 
-// Gambar ulang saat lebar layar berubah (HP diputar, jendela diubah) supaya teks tetap terbaca.
-// Perubahan tinggi saja (bilah alamat HP naik/turun) diabaikan.
 let timerUkuranGrafik = null;
 window.addEventListener('resize', () => {
     clearTimeout(timerUkuranGrafik);
@@ -1142,12 +1108,10 @@ window.addEventListener('resize', () => {
     }, 120);
 });
 
-// Ketuk di luar grafik = tutup detail titik (penting di layar sentuh, yang tidak punya "mouse keluar")
 document.addEventListener('pointerdown', e => {
     if (!$('grafikWrap').contains(e.target)) tampilkanTitikGrafik(null);
 });
 
 updateTampilan();
 
-// Font web baru siap beberapa saat setelah halaman terbuka; ukur ulang label dengan font yang benar
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(gambarGrafik);
