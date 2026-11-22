@@ -144,6 +144,8 @@ function bukaTab(tabId) {
         btn.classList.toggle('active', btn.dataset.tab === tabId);
     });
     $(tabId).classList.add('active');
+    // Grafik tidak bisa diukur saat tabnya tersembunyi, jadi digambar ulang begitu tab Statistik dibuka
+    if (tabId === 'tab-budget') gambarGrafik();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -482,10 +484,16 @@ function isiInfoTanggal() {
     $('tahunFooter').innerText = sekarang.getFullYear();
 }
 
+
+// ===== Ekspor Excel =====
+// Membuat file .xlsx asli langsung di browser (tanpa library & tanpa internet).
+// .xlsx adalah file ZIP berisi beberapa file XML, jadi cukup ditulis manual.
+
 const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const FORMAT_RUPIAH_XLSX = '"Rp "#,##0;[Red]-"Rp "#,##0';
-const LEBAR_KOLOM_XLSX = [6, 20, 9, 30, 34, 18];
+const LEBAR_KOLOM_XLSX = [6, 20, 9, 30, 34, 18]; // kolom A sampai F
 
+// Nomor gaya = urutan <xf> di STYLES_XLSX di bawah
 const GAYA = {
     judul: 1, sub: 2, seksi: 3, kepala: 4, teks: 5, tengah: 6,
     uang: 7, totalLabel: 8, totalUang: 9, kosong: 10, labelTebal: 11, totalLabelKiri: 12
@@ -533,6 +541,7 @@ const STYLES_XLSX = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
 
+// Teks polos untuk laporan: buang emoji/simbol aneh, sisakan huruf, angka, dan tanda baca umum
 function bersihkanTeks(teks) {
     return String(teks ?? '')
         .replace(/[^\p{L}\p{N}\s/.,()%&+:-]/gu, '')
@@ -563,6 +572,7 @@ function xmlSel(ref, nilai, gaya) {
     return `<c r="${ref}" s="${gaya}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(nilai)}</t></is></c>`;
 }
 
+// Susun isi lembar kerja. Tiap sel ditulis [nilai, gaya, jumlahKolomYangDigabung]
 function susunBarisLaporan(ringkasan) {
     const { totalMasuk, totalKeluar, sisaTotal } = ringkasan;
     const baris = [];
@@ -678,6 +688,7 @@ ${blokGabung}
 </worksheet>`;
 }
 
+// ZIP sederhana tanpa kompresi (metode "store"), cukup untuk file sekecil ini
 const TABEL_CRC32 = (() => {
     const tabel = new Uint32Array(256);
     for (let n = 0; n < 256; n++) {
@@ -813,12 +824,27 @@ function eksporKeExcel() {
 }
 
 
+// ===== Grafik statistik (minggu / bulan / tahun) =====
+
+const NAMA_HARI_PENDEK = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+const NAMA_BULAN_PENDEK = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+let lebarGrafikTergambar = 0;
+
 function setModeGrafik(mode) {
     modeGrafik = mode;
     document.querySelectorAll('.chart-tab').forEach(tombol => {
         tombol.classList.toggle('active', tombol.dataset.mode === mode);
     });
     gambarGrafik();
+}
+
+// Selisih hari kalender (a - b). Dihitung dari tanggalnya, bukan dari selisih milidetik,
+// supaya tidak meleset sehari saat ada pergantian jam musim panas (DST).
+function selisihHari(a, b) {
+    const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+    const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+    return Math.round((utcA - utcB) / 86400000);
 }
 
 function konfigGrafikMinggu(now) {
@@ -828,16 +854,16 @@ function konfigGrafikMinggu(now) {
         judul: 'Pengeluaran Minggu Ini',
         labelX: 'Hari',
         labels: NAMA_HARI,
+        labelsPendek: NAMA_HARI_PENDEK,
         detail: NAMA_HARI.map((hari, i) => {
             const t = new Date(awal);
             t.setDate(awal.getDate() + i);
             return hari + ', ' + t.getDate() + ' ' + NAMA_BULAN[t.getMonth()];
         }),
-        indeksSekarang: (now.getDay() + 6) % 7,
+        indeksSekarang: selisihHari(now, awal),
         cariIndeks: tgl => {
-            if (tgl < awal) return -1;
-            const hariKe = Math.floor((new Date(tgl.getFullYear(), tgl.getMonth(), tgl.getDate()) - awal) / 86400000);
-            return hariKe < 7 ? hariKe : -1;
+            const hariKe = selisihHari(tgl, awal);
+            return hariKe >= 0 && hariKe < 7 ? hariKe : -1;
         }
     };
 }
@@ -852,6 +878,7 @@ function konfigGrafikBulan(now) {
         judul: 'Pengeluaran ' + NAMA_BULAN[bulan] + ' ' + tahun,
         labelX: 'Tanggal',
         labels,
+        labelsPendek: labels,
         detail: labels.map(tgl => tgl + ' ' + NAMA_BULAN[bulan] + ' ' + tahun),
         indeksSekarang: now.getDate() - 1,
         cariIndeks: tgl => (tgl.getFullYear() === tahun && tgl.getMonth() === bulan) ? tgl.getDate() - 1 : -1
@@ -865,6 +892,8 @@ function konfigGrafikTahun(now) {
         judul: 'Pengeluaran Tahun ' + tahun,
         labelX: 'Bulan',
         labels: NAMA_BULAN,
+        labelsPendek: NAMA_BULAN_PENDEK,
+        labelsInisial: NAMA_BULAN.map(bulan => bulan[0]),
         detail: NAMA_BULAN.map(bulan => bulan + ' ' + tahun),
         indeksSekarang: now.getMonth(),
         cariIndeks: tgl => tgl.getFullYear() === tahun ? tgl.getMonth() : -1
@@ -881,6 +910,7 @@ function siapkanDataGrafik(mode) {
         if (i >= 0 && i < nilai.length) nilai[i] += item.jumlah;
     });
 
+    // Waktu yang belum terjadi (setelah hari ini / bulan ini) tidak digambar
     const nilaiTampil = nilai.map((v, i) => (i <= konfig.indeksSekarang ? v : null));
 
     return { ...konfig, nilai: nilaiTampil };
@@ -906,6 +936,64 @@ function hitungSkalaY(maks) {
     return { langkah, jumlah: Math.ceil(maks / langkah) };
 }
 
+// Mengukur lebar teks sumbu dengan font yang sama seperti di layar
+function buatPengukurTeks(elemen) {
+    let ctx = null;
+    try {
+        ctx = document.createElement('canvas').getContext('2d');
+        ctx.font = '500 11.5px ' + getComputedStyle(elemen).fontFamily;
+    } catch (err) {
+        ctx = null;
+    }
+    return teks => (ctx ? ctx.measureText(String(teks)).width : String(teks).length * 6.6);
+}
+
+// Menentukan label sumbu X mana yang ditampilkan agar tidak saling bertumpuk.
+// - Hari & bulan: nama lengkap bila muat, kalau tidak pakai singkatan (Sen, Sel / Jan, Feb).
+// - Tanggal: kelipatan 1, 2, 5 atau 10 sesuai lebar layar.
+// - Label "hari ini" selalu tampil.
+function pilihLabelSumbuX(g, posX, mode, ukur) {
+    const n = g.labels.length;
+    const jarak = n > 1 ? posX[1] - posX[0] : Infinity;
+    // Pakai tingkat label terpanjang yang masih muat semua: nama lengkap, singkatan, lalu inisial.
+    // Kalau tidak ada yang muat, pakai singkatan dan sebagian label dilewati (lihat langkah di bawah).
+    const tingkat = [g.labels, g.labelsPendek, g.labelsInisial].filter(Boolean);
+    const muatSemua = daftar => Math.max(...daftar.map(ukur)) + 6 <= jarak;
+    const teks = tingkat.find(muatSemua) ?? g.labelsPendek;
+    const lebarMaks = Math.max(...teks.map(ukur)) + 6;
+
+    const opsiLangkah = mode === 'bulan' ? [1, 2, 5, 10] : [1, 2, 3, 4, 6];
+    const langkah = opsiLangkah.find(s => jarak * s >= lebarMaks) ?? opsiLangkah[opsiLangkah.length - 1];
+
+    const tampil = new Set();
+    for (let i = 0; i < n; i++) {
+        const tgl = i + 1;
+        let reguler;
+        if (mode !== 'bulan') reguler = i % langkah === 0;
+        else if (langkah === 1) reguler = true;
+        else if (langkah === 2) reguler = tgl % 2 === 1;
+        else reguler = tgl === 1 || tgl % langkah === 0;
+        if (reguler) tampil.add(i);
+    }
+
+    const bentrok = (i, j) => Math.abs(posX[i] - posX[j]) < (ukur(teks[i]) + ukur(teks[j])) / 2 + 6;
+
+    // Tanggal terakhir ikut tampil bila masih ada tempat
+    const terakhir = n - 1;
+    if (mode === 'bulan' && !tampil.has(terakhir) && ![...tampil].some(j => bentrok(terakhir, j))) {
+        tampil.add(terakhir);
+    }
+
+    // Hari ini selalu tampil; label tetangga yang menabraknya dikalahkan
+    const sekarang = g.indeksSekarang;
+    if (!tampil.has(sekarang)) {
+        [...tampil].filter(j => bentrok(sekarang, j)).forEach(j => tampil.delete(j));
+        tampil.add(sekarang);
+    }
+
+    return { teks, tampil };
+}
+
 function gambarGrafik() {
     const wrap = $('grafikWrap');
     if (!wrap) return;
@@ -914,66 +1002,92 @@ function gambarGrafik() {
     dataGrafikAktif = g;
     $('judulGrafik').innerText = g.judul;
 
-    const W = 640, H = 340;
-    const kiri = 64, kanan = 18, atas = 16;
-    const labelMiring = modeGrafik === 'tahun';
-    const bawah = labelMiring ? 96 : 62;
-    const lebar = W - kiri - kanan;
-    const tinggi = H - atas - bawah;
+    // Tab Statistik sedang tersembunyi: lebarnya 0, digambar ulang saat tab dibuka (lihat bukaTab)
+    const W = Math.floor(wrap.clientWidth);
+    if (W < 120) return;
+    lebarGrafikTergambar = W;
 
+    const ukur = buatPengukurTeks(wrap);
+    const sempit = W < 480;
+    const H = Math.round(Math.min(340, Math.max(230, W * 0.62)));
+
+    // Skala
     const maks = Math.max(0, ...g.nilai.filter(v => v !== null));
     const { langkah, jumlah } = hitungSkalaY(maks);
     const yMaks = langkah * jumlah;
     const n = g.labels.length;
-    const xAt = i => kiri + (n === 1 ? lebar / 2 : (lebar * (i + 0.5)) / n);
+    const labelY = Array.from({ length: jumlah + 1 }, (_, t) => singkatRupiah(t * langkah));
+
+    // Margin menyesuaikan lebar label sumbu Y; judul sumbu Y hanya di layar lebar
+    const kiri = Math.ceil(Math.max(...labelY.map(ukur))) + 12 + (sempit ? 0 : 18);
+    const kanan = 14, atas = 14, bawah = 52;
+    const lebar = W - kiri - kanan;
+    const tinggi = H - atas - bawah;
+
+    const xAt = i => kiri + (lebar * (i + 0.5)) / n;
     const yAt = v => atas + tinggi - (v / yMaks) * tinggi;
+    const posX = g.labels.map((_, i) => xAt(i));
+    g.posX = posX;
 
-    const svg = [`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(g.judul)}">`];
+    const svg = [`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(g.judul)}">`];
 
+    // Garis bantu + label sumbu Y
     for (let t = 0; t <= jumlah; t++) {
-        const v = t * langkah;
-        const y = yAt(v);
+        const y = yAt(t * langkah);
         svg.push(`<line class="${t === 0 ? 'axis-line' : 'grid-line'}" x1="${kiri}" x2="${W - kanan}" y1="${y}" y2="${y}"/>`);
-        svg.push(`<text class="ax-text" x="${kiri - 8}" y="${y + 4}" text-anchor="end">${singkatRupiah(v)}</text>`);
+        svg.push(`<text class="ax-text" x="${kiri - 8}" y="${y + 4}" text-anchor="end">${labelY[t]}</text>`);
     }
 
-    const lompat = (modeGrafik === 'bulan' && n > 28) ? 2 : 1;
-    g.labels.forEach((label, i) => {
-        if (i % lompat !== 0) return;
-
-        const x = xAt(i);
-        const y = atas + tinggi + 18;
-        if (labelMiring) {
-            svg.push(`<text class="ax-text" x="${x}" y="${y - 4}" text-anchor="end" transform="rotate(-40 ${x} ${y - 4})">${esc(label)}</text>`);
-        } else {
-            svg.push(`<text class="ax-text" x="${x}" y="${y}" text-anchor="middle">${esc(label)}</text>`);
-        }
+    // Label sumbu X
+    const { teks, tampil } = pilihLabelSumbuX(g, posX, modeGrafik, ukur);
+    tampil.forEach(i => {
+        const kelas = 'ax-text' + (i === g.indeksSekarang ? ' hari-ini' : '');
+        svg.push(`<text class="${kelas}" x="${posX[i]}" y="${atas + tinggi + 18}" text-anchor="middle">${esc(teks[i])}</text>`);
     });
 
-    svg.push(`<text class="ax-title" x="${kiri + lebar / 2}" y="${H - 8}" text-anchor="middle">${g.labelX}</text>`);
-    svg.push(`<text class="ax-title" transform="translate(16 ${atas + tinggi / 2}) rotate(-90)" text-anchor="middle">Jumlah (Rupiah)</text>`);
+    svg.push(`<text class="ax-title" x="${kiri + lebar / 2}" y="${H - 8}" text-anchor="middle">${esc(g.labelX)}</text>`);
+    if (!sempit) {
+        svg.push(`<text class="ax-title" transform="translate(14 ${atas + tinggi / 2}) rotate(-90)" text-anchor="middle">Jumlah (Rupiah)</text>`);
+    }
 
+    // Garis penunjuk titik yang dipilih (digeser lewat tampilkanTitikGrafik)
+    svg.push(`<line class="guide" x1="0" x2="0" y1="${atas}" y2="${atas + tinggi}" visibility="hidden"/>`);
+
+    // Garis data
     const titik = g.nilai
-        .map((v, i) => (v === null ? null : [xAt(i), yAt(v)]))
+        .map((v, i) => (v === null ? null : [posX[i], yAt(v)]))
         .filter(Boolean);
     if (titik.length > 1) {
         svg.push(`<polyline class="line" points="${titik.map(p => p.join(',')).join(' ')}"/>`);
     }
 
-    const radius = modeGrafik === 'bulan' ? 3.5 : 5;
+    // Titik data (titik "hari ini" dibuat sedikit lebih besar)
+    const radius = (modeGrafik === 'bulan' && sempit) ? 3 : (modeGrafik === 'bulan' ? 3.5 : 5);
     g.nilai.forEach((v, i) => {
         if (v === null) return;
-        svg.push(`<circle class="dot" data-i="${i}" cx="${xAt(i)}" cy="${yAt(v)}" r="${radius}"/>`);
-        svg.push(`<circle class="hit" data-i="${i}" cx="${xAt(i)}" cy="${yAt(v)}" r="14"/>`);
+        const hariIni = i === g.indeksSekarang;
+        svg.push(`<circle class="dot${hariIni ? ' hari-ini' : ''}" data-i="${i}" cx="${posX[i]}" cy="${yAt(v)}" r="${hariIni ? radius + 1.5 : radius}"/>`);
     });
 
     svg.push('</svg>');
     wrap.innerHTML = svg.join('');
 
-    wrap.querySelectorAll('.hit').forEach(el => {
-        const tampil = () => tampilkanTitikGrafik(parseInt(el.dataset.i, 10));
-        el.addEventListener('mouseenter', tampil);
-        el.addEventListener('click', tampil);
+    // Interaksi: seluruh kolom hari/tanggal/bulan bisa disentuh, bukan hanya titiknya.
+    const svgEl = wrap.querySelector('svg');
+    const indeksDariEvent = e => {
+        const kotak = svgEl.getBoundingClientRect();
+        const x = (e.clientX - kotak.left) * (W / kotak.width);
+        const i = Math.floor(((x - kiri) / lebar) * n);
+        return (i >= 0 && i < n && g.nilai[i] !== null) ? i : null;
+    };
+    const pilih = e => {
+        const i = indeksDariEvent(e);
+        if (i !== null) tampilkanTitikGrafik(i);
+    };
+    svgEl.addEventListener('pointermove', pilih);
+    svgEl.addEventListener('pointerdown', pilih);
+    svgEl.addEventListener('pointerleave', e => {
+        if (e.pointerType === 'mouse') tampilkanTitikGrafik(null);
     });
 
     tampilkanTitikGrafik(null);
@@ -982,20 +1096,34 @@ function gambarGrafik() {
 function tampilkanTitikGrafik(i) {
     const info = $('grafikInfo');
     const g = dataGrafikAktif;
+    if (!g) return;
 
-    document.querySelectorAll('#grafikWrap .dot').forEach(dot => {
+    const wrap = $('grafikWrap');
+    wrap.querySelectorAll('.dot').forEach(dot => {
         dot.classList.toggle('aktif', i !== null && parseInt(dot.dataset.i, 10) === i);
     });
 
+    const garis = wrap.querySelector('.guide');
+    if (garis) {
+        if (i !== null && g.posX) {
+            garis.setAttribute('x1', g.posX[i]);
+            garis.setAttribute('x2', g.posX[i]);
+            garis.setAttribute('visibility', 'visible');
+        } else {
+            garis.setAttribute('visibility', 'hidden');
+        }
+    }
+
     if (i !== null) {
-        info.innerHTML = esc(g.detail[i]) + ': <strong>' + formatRupiah(g.nilai[i]) + '</strong>';
+        const penanda = i === g.indeksSekarang ? ' (hari ini)' : '';
+        info.innerHTML = esc(g.detail[i]) + penanda + ': <strong>' + formatRupiah(g.nilai[i]) + '</strong>';
         return;
     }
 
     const total = g.nilai.reduce((jumlah, v) => jumlah + (v || 0), 0);
     info.innerHTML = total === 0
         ? 'Belum ada pengeluaran pada periode ini.'
-        : 'Total periode ini: <strong>' + formatRupiah(total) + '</strong>. Arahkan atau ketuk titik untuk melihat detail.';
+        : 'Total periode ini: <strong>' + formatRupiah(total) + '</strong>. Arahkan atau ketuk grafik untuk melihat detail.';
 }
 
 
@@ -1003,6 +1131,23 @@ migrasiGajiLama();
 aktifkanFormatRupiahPadaInput();
 isiInfoTanggal();
 
-$('grafikWrap').addEventListener('mouseleave', () => tampilkanTitikGrafik(null));
+// Gambar ulang saat lebar layar berubah (HP diputar, jendela diubah) supaya teks tetap terbaca.
+// Perubahan tinggi saja (bilah alamat HP naik/turun) diabaikan.
+let timerUkuranGrafik = null;
+window.addEventListener('resize', () => {
+    clearTimeout(timerUkuranGrafik);
+    timerUkuranGrafik = setTimeout(() => {
+        const wrap = $('grafikWrap');
+        if (wrap && Math.floor(wrap.clientWidth) !== lebarGrafikTergambar) gambarGrafik();
+    }, 120);
+});
+
+// Ketuk di luar grafik = tutup detail titik (penting di layar sentuh, yang tidak punya "mouse keluar")
+document.addEventListener('pointerdown', e => {
+    if (!$('grafikWrap').contains(e.target)) tampilkanTitikGrafik(null);
+});
 
 updateTampilan();
+
+// Font web baru siap beberapa saat setelah halaman terbuka; ukur ulang label dengan font yang benar
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(gambarGrafik);
