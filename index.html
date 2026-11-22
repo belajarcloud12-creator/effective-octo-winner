@@ -3,188 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DompetKu - catat gaji dan pengeluaran, pantau budget 50/30/20 setiap hari.">
+    <meta name="theme-color" content="#14305a">
     <title>DompetKu - Kelola Gaji & Pengeluaran</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="container">
-    <div class="wallet-card">
-        <div class="wallet-header">
-            <span>Total Pemasukan Terkumpul</span>
-            <button class="btn-reset-icon" onclick="resetSemuaData()" title="Reset Awal Bulan">🔄</button>
-        </div>
-        <h1 id="displayTotalGaji">Rp 0</h1>
-        <div class="wallet-sub">
-            <span>Terpakai: <strong id="displayTotalKeluar">Rp 0</strong></span>
-            <span>Sisa Total: <strong id="displaySisaTotal">Rp 0</strong></span>
-        </div>
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="#" onclick="bukaTab('tab-budget'); return false;">
+            <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2"/><path d="M3 7v10a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3"/><path d="M21 10h-5a2 2 0 0 0 0 4h5z"/></svg>
+            </span>
+            <span class="brand-name">DompetKu</span>
+        </a>
+
+        <nav class="top-nav" aria-label="Navigasi utama">
+            <button class="top-link active" data-tab="tab-budget" onclick="bukaTab('tab-budget')">Budget</button>
+            <button class="top-link" data-tab="tab-transaksi" onclick="bukaTab('tab-transaksi')">Catat</button>
+            <button class="top-link" data-tab="tab-riwayat" onclick="bukaTab('tab-riwayat')">Riwayat</button>
+        </nav>
+
+        <button class="btn-reset" onclick="resetSemuaData()" title="Hapus semua data dan mulai dari awal">
+            <span aria-hidden="true">🔄</span>
+            <span class="btn-reset-text">Reset awal bulan</span>
+        </button>
     </div>
+</header>
 
-    <div id="tab-budget" class="tab-content active">
-        <div class="budget-summary-card" id="summaryCard">
-            <div class="summary-top">
-                <span class="summary-title">Status Keuangan Bulan Ini</span>
-                <span class="status-badge" id="statusKeuangan">Belum Ada Data</span>
+<main class="page">
+
+    <section class="hero" aria-label="Ringkasan saldo">
+        <div class="hero-main">
+            <p class="hero-label">Sisa uang <span id="heroPeriode" class="hero-periode"></span></p>
+            <h1 id="displaySisaTotal">Rp 0</h1>
+        </div>
+        <div class="hero-side">
+            <div class="hero-metric">
+                <small>Total pemasukan</small>
+                <strong id="displayTotalGaji">Rp 0</strong>
             </div>
-            <div class="summary-stats">
-                <div class="stat-box">
-                    <small>Dana Terpakai</small>
-                    <strong id="persenTerpakai">0%</strong>
+            <div class="hero-metric">
+                <small>Terpakai</small>
+                <strong id="displayTotalKeluar">Rp 0</strong>
+            </div>
+        </div>
+    </section>
+  
+    <div id="tab-budget" class="tab-content active">
+        <div class="budget-layout">
+
+            <div class="col-main">
+                <div class="panel">
+                    <div class="panel-head">
+                        <h2>Status keuangan bulan ini</h2>
+                        <span class="status-badge badge-neutral" id="statusKeuangan">Belum Ada Data</span>
+                    </div>
+                    <div class="summary-stats">
+                        <div class="stat-box">
+                            <small>Dana terpakai</small>
+                            <strong id="persenTerpakai">0%</strong>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-box">
+                            <small>Jatah harian (<span id="sisaHariBulan">0</span> hari lagi)</small>
+                            <strong id="estimasiHarian">Rp 0/hari</strong>
+                            <small id="catatanHarian" class="catatan-harian"></small>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-divider"></div>
-                <div class="stat-box">
-                    <small>Jatah Harian (<span id="sisaHariBulan">0</span> hari lagi)</small>
-                    <strong id="estimasiHarian">Rp 0/hari</strong>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <h2>Alokasi budget 50/30/20</h2>
+                    </div>
+                    <div class="result-section">
+                        <div class="result-item kebutuhan" id="cardKebutuhan">
+                            <div class="item-top">
+                                <span class="result-title">🏠 Kebutuhan Pokok (50%)</span>
+                                <span class="result-value" id="resKebutuhan">Rp 0</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill" id="barKebutuhan"></div></div>
+                            <div class="item-bottom">
+                                <small class="deskripsi">Sisa dana: <strong id="sisaKebutuhan">Rp 0</strong></small>
+                                <span class="over-alert" id="alertKebutuhan">⚠️ Over Budget!</span>
+                            </div>
+                        </div>
+
+                        <div class="result-item keinginan" id="cardKeinginan">
+                            <div class="item-top">
+                                <span class="result-title">🎮 Keinginan (30%)</span>
+                                <span class="result-value" id="resKeinginan">Rp 0</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill" id="barKeinginan"></div></div>
+                            <div class="item-bottom">
+                                <small class="deskripsi">Sisa dana: <strong id="sisaKeinginan">Rp 0</strong></small>
+                                <span class="over-alert" id="alertKeinginan">⚠️ Over Budget!</span>
+                            </div>
+                        </div>
+
+                        <div class="result-item tabungan" id="cardTabungan">
+                            <div class="item-top">
+                                <span class="result-title">🏦 Tabungan (20%)</span>
+                                <span class="result-value" id="resTabungan">Rp 0</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill" id="barTabungan"></div></div>
+                            <div class="item-bottom">
+                                <small class="deskripsi">Sisa dana: <strong id="sisaTabungan">Rp 0</strong></small>
+                                <span class="over-alert" id="alertTabungan">⚠️ Over Budget!</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="result-section">
-            <div class="result-item kebutuhan" id="cardKebutuhan">
-                <div class="item-top">
-                    <span class="result-title">🏠 Kebutuhan Pokok (50%)</span>
-                    <span class="result-value" id="resKebutuhan">Rp 0</span>
-                </div>
-                <div class="progress-bar"><div class="progress-fill" id="barKebutuhan"></div></div>
-                <div class="item-bottom">
-                    <small class="deskripsi">Sisa dana: <strong id="sisaKebutuhan">Rp 0</strong></small>
-                    <span class="over-alert" id="alertKebutuhan">⚠️ Over Budget!</span>
+        <div class="panel chart-panel">
+            <div class="panel-head chart-head">
+                <h2 id="judulGrafik">Grafik pengeluaran</h2>
+                <div class="chart-tabs" role="tablist" aria-label="Pilih periode grafik">
+                    <button type="button" class="chart-tab" data-mode="minggu" onclick="setModeGrafik('minggu')">Minggu ini</button>
+                    <button type="button" class="chart-tab" data-mode="bulan" onclick="setModeGrafik('bulan')">Bulan ini</button>
+                    <button type="button" class="chart-tab active" data-mode="tahun" onclick="setModeGrafik('tahun')">Tahun ini</button>
                 </div>
             </div>
-            
-            <div class="result-item keinginan" id="cardKeinginan">
-                <div class="item-top">
-                    <span class="result-title">🎮 Keinginan (30%)</span>
-                    <span class="result-value" id="resKeinginan">Rp 0</span>
-                </div>
-                <div class="progress-bar"><div class="progress-fill" id="barKeinginan"></div></div>
-                <div class="item-bottom">
-                    <small class="deskripsi">Sisa dana: <strong id="sisaKeinginan">Rp 0</strong></small>
-                    <span class="over-alert" id="alertKeinginan">⚠️ Over Budget!</span>
-                </div>
-            </div>
-            
-            <div class="result-item tabungan" id="cardTabungan">
-                <div class="item-top">
-                    <span class="result-title">🏦 Tabungan (20%)</span>
-                    <span class="result-value" id="resTabungan">Rp 0</span>
-                </div>
-                <div class="progress-bar"><div class="progress-fill" id="barTabungan"></div></div>
-                <div class="item-bottom">
-                    <small class="deskripsi">Sisa dana: <strong id="sisaTabungan">Rp 0</strong></small>
-                    <span class="over-alert" id="alertTabungan">⚠️ Terpakai Melebihi Batas!</span>
-                </div>
-            </div>
+            <div class="chart-wrap" id="grafikWrap"></div>
+            <p class="chart-readout" id="grafikInfo"></p>
         </div>
     </div>
 
     <div id="tab-transaksi" class="tab-content">
-        <div class="card-box">
-            <h3>💰 Tambah Pemasukan / Gaji</h3>
-            <p class="hint">Nominal baru akan otomatis ditambahkan ke saldo yang ada.</p>
-            <div class="form-group input-rp-wrapper">
-                <span class="prefix-rp">Rp</span>
-                <input type="text" id="gaji" class="input-rupiah" inputmode="numeric" placeholder="0">
-            </div>
-            <div class="quick-chips">
-                <button type="button" onclick="tambahCepat('gaji', 500000)">+500rb</button>
-                <button type="button" onclick="tambahCepat('gaji', 1000000)">+1 Jt</button>
-                <button type="button" onclick="tambahCepat('gaji', 5000000)">+5 Jt</button>
-            </div>
-            <button onclick="tambahPemasukan()" class="btn-primary">➕ Tambahkan ke Saldo</button>
-        </div>
-
-        <div class="card-box">
-            <h3>💸 Catat Pengeluaran</h3>
-            
-            <div class="form-group">
-                <label for="pilihanPengeluaran">Pilih Pengeluaran:</label>
-                <select id="pilihanPengeluaran" onchange="cekPilihanPengeluaran()">
-                    <option value="Jajan">🍟 Jajan</option>
-                    <option value="Makan">🍱 Makan</option>
-                    <option value="Top Up Game">🎮 Top Up Game</option>
-                    <option value="lainnya">✏️ Lainnya (Ketik sendiri)</option>
-                </select>
+        <div class="form-layout">
+            <div class="card-box">
+                <h3>💰 Tambah Pemasukan / Gaji</h3>
+                <p class="hint">Nominal baru akan otomatis ditambahkan ke saldo yang ada.</p>
+                <div class="form-group input-rp-wrapper">
+                    <span class="prefix-rp">Rp</span>
+                    <input type="text" id="gaji" class="input-rupiah" inputmode="numeric" placeholder="0" aria-label="Nominal pemasukan">
+                </div>
+                <div class="quick-chips">
+                    <button type="button" onclick="tambahCepat('gaji', 500000)">+500rb</button>
+                    <button type="button" onclick="tambahCepat('gaji', 1000000)">+1 Jt</button>
+                    <button type="button" onclick="tambahCepat('gaji', 5000000)">+5 Jt</button>
+                </div>
+                <button onclick="tambahPemasukan()" class="btn-primary">➕ Tambahkan ke Saldo</button>
             </div>
 
-            <div class="form-group" id="groupInputLainnya" style="display: none;">
-                <input type="text" id="namaPengeluaran" placeholder="Ketik nama pengeluaran...">
-            </div>
+            <div class="card-box">
+                <h3>💸 Catat Pengeluaran</h3>
 
-            <div class="form-group input-rp-wrapper">
-                <span class="prefix-rp">Rp</span>
-                <input type="text" id="jumlahPengeluaran" class="input-rupiah" inputmode="numeric" placeholder="0">
+                <div class="form-group">
+                    <label for="pilihanPengeluaran">Pilih pengeluaran</label>
+                    <select id="pilihanPengeluaran" onchange="cekPilihanPengeluaran()">
+                        <option value="Jajan">🍟 Jajan</option>
+                        <option value="Makan">🍱 Makan</option>
+                        <option value="Top Up Game">🎮 Top Up Game</option>
+                        <option value="lainnya">✏️ Lainnya (Ketik sendiri)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="groupInputLainnya" style="display: none;">
+                    <input type="text" id="namaPengeluaran" placeholder="Ketik nama pengeluaran..." aria-label="Nama pengeluaran">
+                </div>
+
+                <div class="form-group input-rp-wrapper">
+                    <span class="prefix-rp">Rp</span>
+                    <input type="text" id="jumlahPengeluaran" class="input-rupiah" inputmode="numeric" placeholder="0" aria-label="Jumlah pengeluaran">
+                </div>
+                <div class="quick-chips">
+                    <button type="button" onclick="tambahCepat('jumlahPengeluaran', 10000)">+10rb</button>
+                    <button type="button" onclick="tambahCepat('jumlahPengeluaran', 25000)">+25rb</button>
+                    <button type="button" onclick="tambahCepat('jumlahPengeluaran', 50000)">+50rb</button>
+                    <button type="button" onclick="tambahCepat('jumlahPengeluaran', 100000)">+100rb</button>
+                </div>
+                <div class="form-group">
+                    <label for="kategoriPengeluaran">Ambil dari pos</label>
+                    <select id="kategoriPengeluaran">
+                        <option value="kebutuhan">🏠 Kebutuhan Pokok (50%)</option>
+                        <option value="keinginan">🎮 Keinginan (30%)</option>
+                        <option value="tabungan">🏦 Tabungan (20%)</option>
+                    </select>
+                </div>
+                <button onclick="tambahPengeluaran()" class="btn-catat">Simpan Pengeluaran</button>
             </div>
-            <div class="quick-chips">
-                <button type="button" onclick="tambahCepat('jumlahPengeluaran', 10000)">+10rb</button>
-                <button type="button" onclick="tambahCepat('jumlahPengeluaran', 25000)">+25rb</button>
-                <button type="button" onclick="tambahCepat('jumlahPengeluaran', 50000)">+50rb</button>
-                <button type="button" onclick="tambahCepat('jumlahPengeluaran', 100000)">+100rb</button>
-            </div>
-            <div class="form-group">
-                <select id="kategoriPengeluaran">
-                    <option value="kebutuhan">🏠 Kebutuhan Pokok (50%)</option>
-                    <option value="keinginan">🎮 Keinginan (30%)</option>
-                    <option value="tabungan">🏦 Tabungan (20%)</option>
-                </select>
-            </div>
-            <button onclick="tambahPengeluaran()" class="btn-catat">Simpan Pengeluaran</button>
         </div>
     </div>
-  
-    <div id="tab-riwayat" class="tab-content">
-        <div class="riwayat-header">
-            <h3>Riwayat Pemasukan</h3>
-        </div>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Sumber</th>
-                        <th>Nominal</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="listPemasukan"></tbody>
-            </table>
-        </div>
 
-        <div class="riwayat-header" style="margin-top: 20px;">
-            <h3>Riwayat Pengeluaran</h3>
-        </div>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nama</th>
-                        <th>Kategori</th>
-                        <th>Jumlah</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="listPengeluaran"></tbody>
-            </table>
+    <!-- ================= TAB RIWAYAT ================= -->
+    <div id="tab-riwayat" class="tab-content">
+        <div class="riwayat-layout">
+            <div class="panel">
+                <div class="panel-head"><h2>Riwayat pemasukan</h2></div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sumber</th>
+                                <th>Nominal</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listPemasukan"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head"><h2>Riwayat pengeluaran</h2></div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Kategori</th>
+                                <th>Jumlah</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listPengeluaran"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <button onclick="eksporKeExcel()" class="btn-excel">📥 Ekspor Laporan ke Excel</button>
     </div>
 
-    <nav class="bottom-nav">
-        <button class="nav-item active" onclick="bukaTab('tab-budget', this)">
-            <span class="nav-icon">📊</span>
-            <span class="nav-label">Budget</span>
-        </button>
-        <button class="nav-item" onclick="bukaTab('tab-transaksi', this)">
-            <span class="nav-icon">➕</span>
-            <span class="nav-label">Catat</span>
-        </button>
-        <button class="nav-item" onclick="bukaTab('tab-riwayat', this)">
-            <span class="nav-icon">📜</span>
-            <span class="nav-label">Riwayat</span>
-        </button>
-    </nav>
-</div>
+</main>
+
+<footer class="site-footer">
+    <p>DompetKu &copy; <span id="tahunFooter"></span>. Data tersimpan di perangkat Anda dan tidak dikirim ke server.</p>
+</footer>
+
+<nav class="bottom-nav" aria-label="Navigasi bawah">
+    <button class="nav-item active" data-tab="tab-budget" onclick="bukaTab('tab-budget')">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Budget</span>
+    </button>
+    <button class="nav-item" data-tab="tab-transaksi" onclick="bukaTab('tab-transaksi')">
+        <span class="nav-icon">➕</span>
+        <span class="nav-label">Catat</span>
+    </button>
+    <button class="nav-item" data-tab="tab-riwayat" onclick="bukaTab('tab-riwayat')">
+        <span class="nav-icon">📜</span>
+        <span class="nav-label">Riwayat</span>
+    </button>
+</nav>
 
 <script src="script.js"></script>
 </body>
