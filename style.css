@@ -464,15 +464,28 @@ th { background-color: #f8fafc; font-weight: 700; color: #475569; font-size: 12.
 }
 .chart-tab.active { background: #fff; color: var(--navy-2); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
 
-.chart-wrap svg { width: 100%; height: auto; display: block; }
+/* Grafik digambar dengan ukuran piksel asli (bukan diperkecil dari 640px),
+   jadi ukuran teks di bawah ini sama persis dengan yang tampil di layar. */
+.chart-wrap svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    cursor: pointer;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
 .chart-wrap .grid-line { stroke: #dbe2ea; stroke-width: 1; }
 .chart-wrap .axis-line { stroke: #94a3b8; stroke-width: 1; }
-.chart-wrap .ax-text { fill: #64748b; font-size: 12px; }
-.chart-wrap .ax-title { fill: #475569; font-size: 13px; font-weight: 600; }
-.chart-wrap .line { fill: none; stroke: #4f8fd6; stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart-wrap .ax-text { fill: #64748b; font-size: 11.5px; font-weight: 500; }
+.chart-wrap .ax-text.hari-ini { fill: var(--navy); font-weight: 800; }
+.chart-wrap .ax-title { fill: #475569; font-size: 12px; font-weight: 600; }
+.chart-wrap .guide { stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 3 3; }
+.chart-wrap .line { fill: none; stroke: #4f8fd6; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
 .chart-wrap .dot { fill: #4f8fd6; stroke: #fff; stroke-width: 1.5; }
-.chart-wrap .dot.aktif { fill: var(--navy); }
-.chart-wrap .hit { fill: transparent; cursor: pointer; }
+.chart-wrap .dot.hari-ini { fill: var(--navy-2); }
+.chart-wrap .dot.aktif { fill: var(--navy); stroke: rgba(31, 74, 133, 0.35); stroke-width: 4; }
 
 .chart-readout {
     text-align: center;
