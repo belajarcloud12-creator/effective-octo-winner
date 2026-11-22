@@ -23,7 +23,7 @@
         </a>
 
         <nav class="top-nav" aria-label="Navigasi utama">
-            <button class="top-link active" data-tab="tab-budget" onclick="bukaTab('tab-budget')">Budget</button>
+            <button class="top-link active" data-tab="tab-budget" onclick="bukaTab('tab-budget')">Statistik</button>
             <button class="top-link" data-tab="tab-transaksi" onclick="bukaTab('tab-transaksi')">Catat</button>
             <button class="top-link" data-tab="tab-riwayat" onclick="bukaTab('tab-riwayat')">Riwayat</button>
         </nav>
@@ -108,9 +108,10 @@
 
                         <div class="result-item tabungan" id="cardTabungan">
                             <div class="item-top">
-                                <span class="result-title">🏦 Tabungan (20%)</span>
+                                <span class="result-title">🏦 Tabungan &amp; Dana Darurat (20%)</span>
                                 <span class="result-value" id="resTabungan">Rp 0</span>
                             </div>
+                            <p class="pos-hint">Termasuk dana darurat. Idealnya terkumpul 3–6× pengeluaran bulanan.</p>
                             <div class="progress-bar"><div class="progress-fill" id="barTabungan"></div></div>
                             <div class="item-bottom">
                                 <small class="deskripsi">Sisa dana: <strong id="sisaTabungan">Rp 0</strong></small>
@@ -185,7 +186,7 @@
                     <select id="kategoriPengeluaran">
                         <option value="kebutuhan">🏠 Kebutuhan Pokok (50%)</option>
                         <option value="keinginan">🎮 Keinginan (30%)</option>
-                        <option value="tabungan">🏦 Tabungan (20%)</option>
+                        <option value="tabungan">🏦 Tabungan &amp; Dana Darurat (20%)</option>
                     </select>
                 </div>
                 <button onclick="tambahPengeluaran()" class="btn-catat">Simpan Pengeluaran</button>
@@ -241,7 +242,7 @@
 <nav class="bottom-nav" aria-label="Navigasi bawah">
     <button class="nav-item active" data-tab="tab-budget" onclick="bukaTab('tab-budget')">
         <span class="nav-icon">📊</span>
-        <span class="nav-label">Budget</span>
+        <span class="nav-label">Statistik</span>
     </button>
     <button class="nav-item" data-tab="tab-transaksi" onclick="bukaTab('tab-transaksi')">
         <span class="nav-icon">➕</span>
