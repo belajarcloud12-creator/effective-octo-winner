@@ -4,7 +4,7 @@ const KUNCI_GAJI_LAMA = 'totalGaji';
 const POS_BUDGET = {
     kebutuhan: { id: 'Kebutuhan', nama: 'Kebutuhan', label: 'Kebutuhan Pokok (50%)', porsi: 0.5 },
     keinginan: { id: 'Keinginan', nama: 'Keinginan', label: 'Keinginan (30%)',       porsi: 0.3 },
-    tabungan:  { id: 'Tabungan',  nama: 'Tabungan',  label: 'Tabungan (20%)',        porsi: 0.2 }
+    tabungan:  { id: 'Tabungan',  nama: 'Tabungan',  label: 'Tabungan & Dana Darurat (20%)', porsi: 0.2 }
 };
 
 const BATAS_WASPADA = 0.40; 
@@ -231,7 +231,6 @@ function tambahPengeluaran() {
     });
     simpanPengeluaran();
 
-    // Kosongkan form
     $('pilihanPengeluaran').value = 'Jajan';
     $('namaPengeluaran').value = '';
     $('groupInputLainnya').style.display = 'none';
@@ -514,7 +513,7 @@ function barisExcelPengeluaran() {
 
     return urut.map((item, i) => {
         const waktu = tanggalItem(item).toISOString();
-        const labelPos = POS_BUDGET[item.kategori]?.label || bersihkanTeks(item.kategori);
+        const labelPos = esc(POS_BUDGET[item.kategori]?.label) || bersihkanTeks(item.kategori);
 
         return `<tr>
             <td class="c">${i + 1}</td>
@@ -531,7 +530,7 @@ function barisExcelRekap(ringkasan) {
     return Object.entries(POS_BUDGET).map(([kunci, konfig]) => {
         const { budget, terpakai, sisa } = ringkasan.pos[kunci];
         return `<tr>
-            <td colspan="2">${konfig.label}</td>
+            <td colspan="2">${esc(konfig.label)}</td>
             <td colspan="2" class="n">${Math.round(budget)}</td>
             <td class="n">${terpakai}</td>
             <td class="n ${sisa < 0 ? 'minus' : ''}">${Math.round(sisa)}</td>
