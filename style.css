@@ -464,8 +464,6 @@ th { background-color: #f8fafc; font-weight: 700; color: #475569; font-size: 12.
 }
 .chart-tab.active { background: #fff; color: var(--navy-2); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
 
-/* Grafik digambar dengan ukuran piksel asli (bukan diperkecil dari 640px),
-   jadi ukuran teks di bawah ini sama persis dengan yang tampil di layar. */
 .chart-wrap svg {
     width: 100%;
     height: auto;
